@@ -1,0 +1,33 @@
+---
+  schedulerId: "task-graph-scheduler"
+  metadata:
+    name: "Hello world graph"
+    description: "Says hello"
+    source: "https://github.com/taskcluster/taskcluster-cli"
+    owner: "jlal@mozilla.com"
+  provisionerId: "aws-provisioner"
+  workerType: "cli"
+  scopes:
+    - queue:create-artifact:public/node_modules.tar.gz
+    - assume:worker-id:*
+    - index:insert-task:*
+  payload:
+    features:
+      taskclusterProxy: true
+    maxRunTime: 300
+    image: "taskcluster/npm-cache:0.0.6"
+    env:
+      DEBUG: '*'
+    command:
+      - "entrypoint"
+  created: "2014-12-03T06:15:03.198Z"
+  deadline: "2014-12-04T06:15:03.198Z"
+  taskGroupId: "iqwjtlTrRJ6nESnygdqWAQ"
+  routes: []
+  retries: 5
+  tags: {}
+  extra:
+    npmCache:
+      expires: 2014-12-20T06:15:03.198Z
+      url: https://raw.githubusercontent.com/mozilla-b2g/gaia/master/package.json
+
