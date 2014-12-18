@@ -80,15 +80,15 @@ suite('taskcluster-npm-cache', function() {
       claimAndCompleteTask(taskId);
     });
 
-    test('initialize the cache', async function() {
+    test('cache and then recache', async function() {
+      // Calculate the hash so we know what to do later...
       let expectedHash = hash(
         await fs.readFile(`${__dirname}/../fixtures/simple.json`, 'utf8')
       );
 
+      // Unique namespaces are used to ensure we are using new data each test.
       let namespace = slugid.v4();
-      let result = await run([
-        '--task-id', taskId, '--namespace', namespace
-      ]);
+      await run(['--task-id', taskId, '--namespace', namespace]);
 
       let url = queue.buildUrl(
         queue.getLatestArtifact, taskId, 'public/node_modules.tar.gz'
@@ -101,6 +101,11 @@ suite('taskcluster-npm-cache', function() {
 
       let indexedTask = await index.findTask(`${namespace}.${expectedHash}`);
       assert.equal(indexedTask.taskId, taskId);
+
+      // Rerun the task to check if we clobbered the original.
+      await run(['--task-id', taskId, '--namespace', namespace]);
+      let resAgain = await request.get(url).end();
+      assert.equal(res.headers['etag'], resAgain.headers['etag']);
     });
   });
 });

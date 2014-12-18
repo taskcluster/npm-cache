@@ -92,8 +92,17 @@ async function main() {
   let pkgReqs = await request.get(url).end();
   let pkg = JSON.parse(pkgReqs.text);
   let pkgHash = hash(pkgReqs.text);
+  let namespace = `${args.namespace}.${pkgHash}`
 
-  // TODO: Bail if we have a hash here...
+  // Check to see if we already have this package json cached...
+  try {
+    let indexedTask = await index.findTask(namespace);
+    console.log('npm cache: cache hit (skipping npm install/upload)');
+    process.exit(0);
+  } catch (e) {
+    if (!err.statusCode || err.statusCode !== 404) throw e;
+  }
+
   let workspace = await npm();
   await workspace.install(pkg);
   let moduleTar = await workspace.exportTar()
@@ -105,8 +114,6 @@ async function main() {
     expires: expires,
     data: {}
   };
-
-  let namespace = `${args.namespace}.${pkgHash}`
   await index.insertTask(namespace, indexPayload);
 }
 
