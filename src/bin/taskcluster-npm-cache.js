@@ -75,10 +75,6 @@ async function main() {
 
   let task = await queue.getTask(args.taskId);
 
-  // XXX: TODO Replace me with config.
-  let expires = new Date();
-  expires.setHours(expires.getHours() + 1);
-
   if (!task.extra || !task.extra.npmCache) {
     console.error('Task must contain task.extra');
     process.exit(1);
