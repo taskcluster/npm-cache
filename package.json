@@ -8,7 +8,7 @@
     "prepublish": "6to5 -m commonInterop -s -e src --out-dir build"
   },
   "bin": {
-    "taskcluster-npm-cache": "./build/bin/npm-cache.js"
+    "taskcluster-npm-cache": "./build/bin/taskcluster-npm-cache.js"
   },
   "repository": {
     "type": "git",
