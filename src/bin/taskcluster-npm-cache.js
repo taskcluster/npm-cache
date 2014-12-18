@@ -11,6 +11,7 @@ import request from 'superagent-promise';
 import fs from 'mz/fs';
 import fsPath from 'path';
 import eventToPromise from 'event-to-promise';
+import hash from '../hash';
 
 let parser = new ArgumentParser();
 parser.addArgument(['--task-id'], {
@@ -25,18 +26,19 @@ parser.addArgument(['--run-id'], {
   defaultValue: 0
 });
 
+parser.addArgument(['--namespace'], {
+  defaultValue: 'npm_cache',
+  help: 'Index namespace to use'
+});
 
 parser.addArgument(['--proxy'], {
   action: 'storeTrue',
   help: 'Rely on the taskcluster proxy service provided by the docker-worker'
 });
 
-async function upload(queue, taskId, runId, modulePath) {
+async function upload(queue, taskId, runId, expires, modulePath) {
   let size = (await fs.stat(modulePath)).size;
   let tar = fs.createReadStream(modulePath);
-
-  let expires = new Date();
-  expires.setHours(expires.getHours() + 1);
 
   let artifact = {
     storageType: 's3',
@@ -54,7 +56,6 @@ async function upload(queue, taskId, runId, modulePath) {
   put.set('Content-Encoding', 'gzip');
   tar.pipe(put);
   put.end()
-  let res = await eventToPromise(put, 'response');
   await eventToPromise(put, 'end');
 }
 
@@ -74,6 +75,10 @@ async function main() {
 
   let task = await queue.getTask(args.taskId);
 
+  // XXX: TODO Replace me with config.
+  let expires = new Date();
+  expires.setHours(expires.getHours() + 1);
+
   if (!task.extra || !task.extra.npmCache) {
     console.error('Task must contain task.extra');
     process.exit(1);
@@ -86,14 +91,28 @@ async function main() {
 
   let pkgReqs = await request.get(url).end();
   let pkg = JSON.parse(pkgReqs.text);
+  let pkgHash = hash(pkgReqs.text);
 
   // TODO: Bail if we have a hash here...
   let workspace = await npm();
   await workspace.install(pkg);
   let moduleTar = await workspace.exportTar()
-  await upload(queue, args.taskId, args.runId, moduleTar);
+  await upload(queue, args.taskId, args.runId, expires, moduleTar);
+
+  let indexPayload = {
+    taskId: args.taskId,
+    rank: 0, // XXX: How should we define ranking?
+    expires: expires,
+    data: {}
+  };
+
+  let namespace = `${args.namespace}.${pkgHash}`
+  await index.insertTask(namespace, indexPayload);
 }
 
 main().catch((e) => {
-  process.nextTick(() => { throw e })
+  process.nextTick(() => {
+    console.error('Something is wrong...');
+    throw e;
+  })
 });

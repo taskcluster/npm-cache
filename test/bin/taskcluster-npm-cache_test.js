@@ -1,9 +1,12 @@
 import taskcluster from 'taskcluster-client';
 import assert from 'assert';
-import exec from '../../src/exec';
+import { spawn } from 'mz/child_process';
+import eventToPromise from 'event-to-promise';
 import http from 'http';
 import slugid from 'slugid';
 import request from 'superagent-promise';
+import hash from '../../src/hash';
+import fs from 'mz/fs';
 import { Server as StaticServer } from 'node-static';
 
 suite('taskcluster-npm-cache', function() {
@@ -11,6 +14,11 @@ suite('taskcluster-npm-cache', function() {
 
   let queue = new taskcluster.Queue();
   let index = new taskcluster.Index();
+
+  async function run(argv) {
+    let proc = spawn(BIN, argv, { stdio: 'inherit' });
+    return await eventToPromise(proc, 'exit');
+  }
 
   async function createTask(npmCache={}) {
     let taskId = slugid.v4();
@@ -73,8 +81,14 @@ suite('taskcluster-npm-cache', function() {
     });
 
     test('initialize the cache', async function() {
-      let result =
-        await exec(`${BIN} --task-id ${taskId}`, { stdio: 'inherit' });
+      let expectedHash = hash(
+        await fs.readFile(`${__dirname}/../fixtures/simple.json`, 'utf8')
+      );
+
+      let namespace = slugid.v4();
+      let result = await run([
+        '--task-id', taskId, '--namespace', namespace
+      ]);
 
       let url = queue.buildUrl(
         queue.getLatestArtifact, taskId, 'public/node_modules.tar.gz'
@@ -84,6 +98,9 @@ suite('taskcluster-npm-cache', function() {
       assert(res.ok, 'node_modules.tar.gz created');
       assert.equal(res.headers['content-encoding'], 'gzip');
       assert.equal(res.headers['content-type'], 'application/x-tar');
+
+      let indexedTask = await index.findTask(`${namespace}.${expectedHash}`);
+      assert.equal(indexedTask.taskId, taskId);
     });
   });
 });
