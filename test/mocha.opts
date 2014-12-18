@@ -1,1 +1,1 @@
---require test/entrypoint --ui tdd
+--require test/entrypoint --ui tdd --timeout 60s

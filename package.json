@@ -4,8 +4,11 @@
   "description": "Utilities to cache package.json + npm payloads via taskcluster.",
   "main": "index.js",
   "scripts": {
-    "test": "mocha",
+    "test": "mocha --recursive",
     "prepublish": "6to5 -m commonInterop -s -e src --out-dir build"
+  },
+  "bin": {
+    "taskcluster-npm-cache": "./build/bin/npm-cache.js"
   },
   "repository": {
     "type": "git",
@@ -23,6 +26,8 @@
   "homepage": "https://github.com/taskcluster/npm-cache",
   "dependencies": {
     "6to5": "^1.15.0",
+    "argparse": "^0.1.16",
+    "bluebird": "^2.3.11",
     "debug": "^2.1.0",
     "delete": "^0.1.5",
     "denodeify": "^1.2.0",
@@ -31,14 +36,13 @@
     "npm": "^2.1.12",
     "promise": "^6.0.1",
     "promised-temp": "^0.1.0",
-    "rmrf": "^1.0.2",
     "slugid": "^1.0.3",
     "superagent": "^0.21.0",
     "superagent-promise": "^0.2.0",
-    "tar-pack": "^2.0.0",
     "taskcluster-client": "^0.18.0"
   },
   "devDependencies": {
-    "mocha": "^2.0.1"
+    "mocha": "^2.0.1",
+    "node-static": "^0.7.6"
   }
 }
