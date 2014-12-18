@@ -33,7 +33,6 @@
     "denodeify": "^1.2.0",
     "event-to-promise": "^0.3.2",
     "mz": "^1.2.0",
-    "npm": "^2.1.12",
     "promise": "^6.0.1",
     "promised-temp": "^0.1.0",
     "slugid": "^1.0.3",
