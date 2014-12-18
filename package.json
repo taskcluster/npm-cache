@@ -4,7 +4,7 @@
   "description": "Utilities to cache package.json + npm payloads via taskcluster.",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "mocha",
     "prepublish": "6to5 -m commonInterop -s -e src --out-dir build"
   },
   "repository": {
