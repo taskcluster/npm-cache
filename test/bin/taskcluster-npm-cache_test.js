@@ -7,6 +7,7 @@ import slugid from 'slugid';
 import request from 'superagent-promise';
 import hash from '../../src/hash';
 import fs from 'mz/fs';
+import signature from '../../src/signature';
 import { Server as StaticServer } from 'node-static';
 
 suite('taskcluster-npm-cache', function() {
@@ -103,7 +104,10 @@ suite('taskcluster-npm-cache', function() {
       assert.equal(res.headers['content-encoding'], 'gzip');
       assert.equal(res.headers['content-type'], 'application/x-tar');
 
-      let indexedTask = await index.findTask(`${namespace}.${expectedHash}`);
+      let indexedTask = await index.findTask(
+        `${namespace}.${signature()}.${expectedHash}`
+      );
+
       assert.equal(indexedTask.taskId, taskId);
       assert.equal(indexedTask.expires, expectedExpires.toJSON());
 

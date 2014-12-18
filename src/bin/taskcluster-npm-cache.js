@@ -12,6 +12,7 @@ import fs from 'mz/fs';
 import fsPath from 'path';
 import eventToPromise from 'event-to-promise';
 import hash from '../hash';
+import signature from '../signature';
 
 let parser = new ArgumentParser();
 parser.addArgument(['--task-id'], {
@@ -97,7 +98,7 @@ async function main() {
   let pkgReqs = await request.get(url).end();
   let pkg = JSON.parse(pkgReqs.text);
   let pkgHash = hash(pkgReqs.text);
-  let namespace = `${args.namespace}.${pkgHash}`
+  let namespace = `${args.namespace}.${signature()}.${pkgHash}`
 
   // Check to see if we already have this package json cached...
   try {
