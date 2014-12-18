@@ -70,8 +70,8 @@ async function main() {
     indexOpts.baseUrl = 'taskcluster/index';
   }
 
-  let queue = new taskcluster.Queue();
-  let index = new taskcluster.Index();
+  let queue = new taskcluster.Queue(queueOpts);
+  let index = new taskcluster.Index(indexOpts);
 
   let task = await queue.getTask(args.taskId);
 
