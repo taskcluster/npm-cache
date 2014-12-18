@@ -86,7 +86,16 @@ async function main() {
 
   let url = task.extra.npmCache.url;
   if (!url) {
-    console.error('Task must contain a url');
+    console.error('Task must contain a extra.npmCache.url');
+    process.exit(1);
+  }
+
+  let expires = new Date(task.extra.npmCache.expires);
+  if (!task.extra.npmCache.expires || expires < new Date()) {
+    console.error(
+      'Task must contain extra.npmCache.expires and be in the future.'
+    );
+    process.exit(1);
   }
 
   let pkgReqs = await request.get(url).end();

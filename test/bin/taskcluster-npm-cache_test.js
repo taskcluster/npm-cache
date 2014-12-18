@@ -73,9 +73,13 @@ suite('taskcluster-npm-cache', function() {
 
   suite('simple new cache', function() {
     let taskId;
+    let expectedExpires = new Date();
+    expectedExpires.setMinutes(expectedExpires.getMinutes() + 5);
+
     setup(async function() {
       taskId = await createTask({
-        url: `${url}/simple.json`
+        url: `${url}/simple.json`,
+        expires: expectedExpires
       });
       claimAndCompleteTask(taskId);
     });
@@ -101,6 +105,7 @@ suite('taskcluster-npm-cache', function() {
 
       let indexedTask = await index.findTask(`${namespace}.${expectedHash}`);
       assert.equal(indexedTask.taskId, taskId);
+      assert.equal(indexedTask.expires, expectedExpires.toJSON());
 
       // Rerun the task to check if we clobbered the original.
       await run(['--task-id', taskId, '--namespace', namespace]);
