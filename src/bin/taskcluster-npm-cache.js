@@ -66,8 +66,8 @@ async function main() {
   let indexOpts = {};
 
   if (args.proxy) {
-    queueOpts.baseUrl = 'taskcluster/queue';
-    indexOpts.baseUrl = 'taskcluster/index';
+    queueOpts.baseUrl = 'taskcluster/queue/v1';
+    indexOpts.baseUrl = 'taskcluster/index/v1';
   }
 
   let queue = new taskcluster.Queue(queueOpts);
