@@ -2,7 +2,7 @@ import temp from 'promised-temp';
 import del from 'delete';
 import denodeify from 'denodeify';
 import Debug from 'debug';
-import exec from './exec';
+import run from './run';
 import { format } from 'util';
 import fs from 'mz/fs';
 import fsPath from 'path';
@@ -32,10 +32,8 @@ class Workspace {
 
     // XXX: We may want to sanitize parts of this such as scripts which
     //      effectively lets you run untrusted code.
-    await exec('npm install', {
-      cwd: this.dir,
-      // XXX: Figure out better logging method...
-      stdio: 'inherit'
+    await run('npm', ['install'], {
+      cwd: this.dir
     });
   }
 
@@ -49,9 +47,8 @@ class Workspace {
     }
 
     let exportPath = fsPath.join(this.dir, 'node_modules.tar.gz')
-    let cmd = format('tar czf %s %s', exportPath, modulesPath);
 
-    await exec(cmd, { stdio: 'inherit' });
+    await run('tar', ['czf', exportPath, modulesPath]);
 
     return exportPath;
   }
