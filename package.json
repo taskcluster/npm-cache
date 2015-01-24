@@ -31,6 +31,8 @@
     "debug": "^2.1.0",
     "delete": "^0.1.5",
     "denodeify": "^1.2.0",
+    "download": "^3.3.0",
+    "download-status": "^2.1.1",
     "event-to-promise": "^0.3.2",
     "mz": "^1.2.0",
     "promise": "^6.0.1",

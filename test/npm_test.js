@@ -20,7 +20,6 @@ suite('npm', function() {
   });
 
   suite('#install', function() {
-
     test('install one dep', async function() {
       var content = require('./fixtures/simple')
       await subject.install(content);
