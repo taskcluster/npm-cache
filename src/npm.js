@@ -1,11 +1,15 @@
 import temp from 'promised-temp';
 import del from 'delete';
 import denodeify from 'denodeify';
+import eventToPromise from 'event-to-promise';
 import Debug from 'debug';
 import run from './run';
 import { format } from 'util';
 import fs from 'mz/fs';
 import fsPath from 'path';
+
+import download from 'download';
+import downloadStatus from 'download-status';
 
 let debug = Debug('npm-cache:workspace');
 
@@ -16,6 +20,21 @@ class Workspace {
 
   async destroy() {
     await denodeify(del)(this.dir, { force: true });
+  }
+
+  /**
+  Extract package from remote target into given directory.
+  */
+  async extract(url, target) {
+    debug('extract', { url, target });
+    let path = fsPath.join(this.dir, 'node_modules.tar.gz');
+
+    let req = download({ extract: true }).
+      get(url).
+      dest(target).
+      use(downloadStatus());
+
+    await denodeify(req.run).call(req);
   }
 
   /**
@@ -48,7 +67,9 @@ class Workspace {
 
     let exportPath = fsPath.join(this.dir, 'node_modules.tar.gz')
 
-    await run('tar', ['czf', exportPath, modulesPath]);
+    await run('tar', ['czf', exportPath, 'node_modules'], {
+      cwd: this.dir
+    });
 
     return exportPath;
   }
