@@ -8,16 +8,17 @@ import request from 'superagent-promise';
 import hash from '../../src/hash';
 import fs from 'mz/fs';
 import signature from '../../src/signature';
+import temp from 'promised-temp';
 import { Server as StaticServer } from 'node-static';
 
 suite('taskcluster-npm-cache', function() {
-  let BIN = `${__dirname}/../../build/bin/taskcluster-npm-cache.js`
-
   let queue = new taskcluster.Queue();
   let index = new taskcluster.Index();
 
-  async function run(argv) {
-    let proc = spawn(BIN, argv, { stdio: 'inherit' });
+  async function runBin(name, argv) {
+    let path = `${__dirname}/../../src/bin/${name}.js`;
+    let exec = `${__dirname}/../../node_modules/.bin/6to5-node`;
+    let proc = spawn(exec, ['-r', path].concat(argv), { stdio: 'inherit' });
     return await eventToPromise(proc, 'exit');
   }
 
@@ -85,7 +86,7 @@ suite('taskcluster-npm-cache', function() {
       claimAndCompleteTask(taskId);
     });
 
-    test('cache and then recache', async function() {
+    test('cache / recache / extract', async function() {
       // Calculate the hash so we know what to do later...
       let expectedHash = hash(
         await fs.readFile(`${__dirname}/../fixtures/simple.json`, 'utf8')
@@ -93,7 +94,10 @@ suite('taskcluster-npm-cache', function() {
 
       // Unique namespaces are used to ensure we are using new data each test.
       let namespace = slugid.v4();
-      await run(['--task-id', taskId, '--namespace', namespace]);
+      await runBin(
+        'taskcluster-npm-cache',
+        ['--task-id', taskId, '--namespace', namespace]
+      );
 
       let url = queue.buildUrl(
         queue.getLatestArtifact, taskId, 'public/node_modules.tar.gz'
@@ -112,9 +116,30 @@ suite('taskcluster-npm-cache', function() {
       assert.equal(indexedTask.expires, expectedExpires.toJSON());
 
       // Rerun the task to check if we clobbered the original.
-      await run(['--task-id', taskId, '--namespace', namespace]);
+      await runBin(
+        'taskcluster-npm-cache',
+        ['--task-id', taskId, '--namespace', namespace]
+      );
+
       let resAgain = await request.get(url).end();
       assert.equal(res.headers['etag'], resAgain.headers['etag']);
+
+
+      // Now expand the cache to test it...
+      let target = await temp.mkdir('npm-cache');
+      await runBin(
+        'taskcluster-npm-cache-get',
+        [
+          '--target', target,
+          '--namespace', namespace,
+          `${__dirname}/../fixtures/simple.json`
+        ]
+      );
+      console.log(target);
+      assert.ok(await fs.exists(`${target}/node_modules`), 'has node_modules');
+      assert.ok(
+        await fs.exists(`${target}/node_modules/debug`), 'has debug module'
+      );
     });
   });
 });

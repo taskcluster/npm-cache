@@ -1,6 +1,6 @@
 {
   "name": "taskcluster-npm-cache",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Utilities to cache package.json + npm payloads via taskcluster.",
   "main": "index.js",
   "scripts": {
@@ -8,7 +8,8 @@
     "prepublish": "6to5 -s -e src --out-dir build"
   },
   "bin": {
-    "taskcluster-npm-cache": "./build/bin/taskcluster-npm-cache.js"
+    "taskcluster-npm-cache": "./build/bin/taskcluster-npm-cache.js",
+    "taskcluster-npm-cache-get": "./build/bin/taskcluster-npm-cache-get.js"
   },
   "repository": {
     "type": "git",

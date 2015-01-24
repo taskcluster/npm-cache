@@ -120,6 +120,8 @@ async function main() {
     expires: expires,
     data: {}
   };
+
+  // Insert the platform specific index namespace...
   await index.insertTask(namespace, indexPayload);
 }
 

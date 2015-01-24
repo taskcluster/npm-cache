@@ -1,4 +1,4 @@
-FROM lightsofapollo/node:v0-10-33
+FROM node:0.10.35
 MAINTAINER James Lal [:lightsofapollo]
 COPY . /npm-cache
 
