@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "mocha --recursive",
-    "prepublish": "6to5 -m commonInterop -s -e src --out-dir build"
+    "prepublish": "6to5 -s -e src --out-dir build"
   },
   "bin": {
     "taskcluster-npm-cache": "./build/bin/taskcluster-npm-cache.js"
@@ -25,7 +25,7 @@
   },
   "homepage": "https://github.com/taskcluster/npm-cache",
   "dependencies": {
-    "6to5": "^1.15.0",
+    "6to5": "^2.13.5",
     "argparse": "^0.1.16",
     "bluebird": "^2.3.11",
     "debug": "^2.1.0",
