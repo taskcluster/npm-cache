@@ -18,6 +18,9 @@ class Workspace {
     this.dir = dir;
   }
 
+  /**
+  Destroy all temporary assets created.
+  */
   async destroy() {
     await denodeify(del)(this.dir, { force: true });
   }
@@ -27,28 +30,25 @@ class Workspace {
   */
   async extract(url, target) {
     debug('extract', { url, target });
-    let path = fsPath.join(this.dir, 'node_modules.tar.gz');
+    let path = fsPath.join(target, 'node_modules.tar.gz');
 
-    let req = download({ extract: true }).
+    let req = download().
       get(url).
       dest(target).
-      use(downloadStatus());
+      use(downloadStatus())
 
     await denodeify(req.run).call(req);
+
+    // XXXAus: We should get rid of this in favor of a platform agnostic
+    //         module.
+    await run('tar', ['zxf', path], { cwd: target });
   }
 
   /**
-  Update or install a npm package json into the current directory.
+  Update or install node modules associated with the package json present
+  in the workspace working directory.
   */
   async install(pkg) {
-    let pkgPath = fsPath.join(this.dir, 'package.json');
-
-    if (await fs.exists(pkgPath)) {
-      throw new Error('Cannot run install twice (package.json exists)');
-    }
-
-    await fs.writeFile(pkgPath, JSON.stringify(pkg));
-
     // XXX: We may want to sanitize parts of this such as scripts which
     //      effectively lets you run untrusted code.
     await run('npm', ['install'], {
@@ -67,6 +67,8 @@ class Workspace {
 
     let exportPath = fsPath.join(this.dir, 'node_modules.tar.gz')
 
+    // XXXAus: We should get rid of this in favor of a platform agnostic
+    //         module.
     await run('tar', ['czf', exportPath, 'node_modules'], {
       cwd: this.dir
     });

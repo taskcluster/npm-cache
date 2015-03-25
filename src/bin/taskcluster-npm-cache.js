@@ -5,6 +5,7 @@ import '6to5/polyfill';
 
 import { ArgumentParser } from 'argparse';
 import assert from 'assert';
+import Debug from 'debug';
 import npm from '../npm';
 import taskcluster from 'taskcluster-client';
 import request from 'superagent-promise';
@@ -14,6 +15,7 @@ import eventToPromise from 'event-to-promise';
 import hash from '../hash';
 import signature from '../signature';
 
+let debug = new Debug('npm-cache:put');
 let parser = new ArgumentParser();
 parser.addArgument(['--task-id'], {
   help: 'The task to run caching logic for',
@@ -96,14 +98,17 @@ async function main() {
   }
 
   let pkgReqs = await request.get(url).end();
-  let pkg = JSON.parse(pkgReqs.text);
-  let pkgHash = hash(pkgReqs.text);
+  let pkg = JSON.parse(pkgReqs.text.trim());
+  let pkgHash = hash(pkgReqs.text.trim());
   let namespace = `${args.namespace}.${signature()}.${pkgHash}`
+
+  debug('Package hash =', pkgHash);
+  debug('Package namespace =', namespace);
 
   // Check to see if we already have this package json cached...
   try {
     let indexedTask = await index.findTask(namespace);
-    console.log('npm cache: cache hit (skipping npm install/upload)');
+    debug('Cache hit. Skipping tarball creation.');
     process.exit(0);
   } catch (e) {
     if (!err.statusCode || err.statusCode !== 404) throw e;
