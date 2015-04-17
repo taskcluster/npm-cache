@@ -45,10 +45,18 @@ class Workspace {
   }
 
   /**
-  Update or install node modules associated with the package json present
-  in the workspace working directory.
+  Update or install node modules associated with the package json URL
+  provided.
   */
   async install(pkg) {
+    let pkgPath = fsPath.join(this.dir, 'package.json');
+
+    if (await fs.exists(pkgPath)) {
+      throw new Error('Cannot run install twice (package.json exists)');
+    }
+
+    await fs.writeFile(pkgPath, JSON.stringify(pkg));
+
     // XXX: We may want to sanitize parts of this such as scripts which
     //      effectively lets you run untrusted code.
     await run('npm', ['install'], {
