@@ -1,7 +1,7 @@
 #! /usr/bin/env node
 
 // This module is the entrypoint so it needs to import the polyfill...
-import '6to5/polyfill';
+import 'babel/polyfill';
 
 import { ArgumentParser } from 'argparse';
 import taskcluster from 'taskcluster-client';
