@@ -1,11 +1,11 @@
 {
   "name": "taskcluster-npm-cache",
-  "version": "1.1.12",
+  "version": "1.1.14",
   "description": "Utilities to cache package.json + npm payloads via taskcluster.",
   "main": "index.js",
   "scripts": {
     "test": "mocha --recursive",
-    "prepublish": "6to5 -s -e src --out-dir build"
+    "prepublish": "babel -s -e src --out-dir build"
   },
   "bin": {
     "taskcluster-npm-cache": "./build/bin/taskcluster-npm-cache.js",
@@ -26,8 +26,8 @@
   },
   "homepage": "https://github.com/taskcluster/npm-cache",
   "dependencies": {
-    "6to5": "^2.13.5",
     "argparse": "^0.1.16",
+    "babel": "^4.7.16",
     "bluebird": "^2.3.11",
     "debug": "^2.1.0",
     "delete": "^0.1.5",

@@ -1,7 +1,7 @@
 #! /usr/bin/env node
 
 // This module is the entrypoint so it needs to import the polyfill...
-import '6to5/polyfill';
+import 'babel/polyfill';
 
 import { ArgumentParser } from 'argparse';
 import assert from 'assert';
@@ -98,8 +98,40 @@ async function main() {
   }
 
   let pkgReqs = await request.get(url).end();
-  let pkg = JSON.parse(pkgReqs.text.trim());
-  let pkgHash = hash(pkgReqs.text.trim());
+  let pkgContents = pkgReqs.text.trim();
+
+  //
+  // XXXAus: HACK HACK HACK!!! To enable gaia to use local module paths in 
+  //         it's package.json we will STRIP OUT all entries (after hashing!)
+  //         which are referring to local in tree modules. These will be
+  //         installed later. We will be removing this hack when we have
+  //         exhibition rolled out in gaia.
+  //
+  let pkg = JSON.parse(pkgContents);
+  function checkForRemoval(obj, key) {
+    let val = obj[key];
+    if (val.startsWith('file:') ||
+        val.startsWith('.') ||
+        val.startsWith('/') ||
+        val.startsWith('~')) {
+      delete obj[key];
+    }
+  }
+  // First we check the dependencies
+  if (pkg.dependencies) {
+    Object.keys(pkg.dependencies).forEach(function(key) {
+      checkForRemoval(pkg.dependencies, key); 
+    });
+  }
+  // Next we'll check the devDependencies
+  if (pkg.devDependencies) {
+    Object.keys(pkg.devDependencies).forEach(function(key) {
+      checkForRemoval(pkg.devDependencies, key);
+    });
+  }
+
+  // Figure out hash of contents and namespace.
+  let pkgHash = hash(pkgContents);
   let namespace = `${args.namespace}.${signature()}.${pkgHash}`
 
   debug('Package hash =', pkgHash);
