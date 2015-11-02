@@ -67,18 +67,21 @@ async function main() {
   debug('Package hash =', pkgHash);
   debug('Package namespace =', namespace);
 
-  // Check to see if we already have this package json cached...
+  // Check to see if we already have this package json cached.
   let indexedTask;
   try {
     indexedTask = await index.findTask(namespace);
-  } catch (e) {
-    if (!err.statusCode || err.statusCode !== 404) throw e;
+  }
+  catch (err) {
+    if (!err.statusCode || err.statusCode !== 404) {
+      throw e;
+    }
   }
 
   if (!indexedTask) {
     debug('Cache miss! Falling back to npm install.');
     await run('npm', ['install']);
-    return;
+    process.exit(0);
   }
 
   let url = await queue.buildUrl(

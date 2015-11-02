@@ -8,15 +8,19 @@ import assert from 'assert';
 import Debug from 'debug';
 import npm from '../npm';
 import taskcluster from 'taskcluster-client';
-import request from 'superagent-promise';
 import fs from 'mz/fs';
 import fsPath from 'path';
 import eventToPromise from 'event-to-promise';
+import Promise from 'promise';
 import hash from '../hash';
 import signature from '../signature';
+import https from 'https';
+import http from 'http';
+import url from 'url';
 
 let debug = new Debug('npm-cache:put');
 let parser = new ArgumentParser();
+
 parser.addArgument(['--task-id'], {
   help: 'The task to run caching logic for',
   required: true,
@@ -40,26 +44,35 @@ parser.addArgument(['--proxy'], {
 });
 
 async function upload(queue, taskId, runId, expires, modulePath) {
+  let contentType = 'application/x-gzip';
   let size = (await fs.stat(modulePath)).size;
-  let tar = fs.createReadStream(modulePath);
+  let tarball = fs.createReadStream(modulePath);
 
-  let artifact = {
+  let artifactOpts = {
     storageType: 's3',
     expires: expires,
-    contentType: 'application/x-tar'
+    contentType: contentType
   };
 
-  let artifactUrl = await queue.createArtifact(
-    taskId, runId, 'public/node_modules.tar.gz', artifact
+  let artifact = await queue.createArtifact(
+    taskId, runId, 'public/node_modules.tar.gz', artifactOpts
   );
 
-  let put = request.put(artifactUrl.putUrl);
-  put.set('Content-Length', size);
-  put.set('Content-Type', 'application/x-tar');
-  put.set('Content-Encoding', 'gzip');
-  tar.pipe(put);
-  put.end()
-  await eventToPromise(put, 'end');
+  let putUrl = url.parse(artifact.putUrl);
+  let putOpts = {
+    headers: {
+      'Content-Length': size,
+      'Content-Type': contentType
+    },
+    host: putUrl.hostname,
+    method: 'PUT',
+    path: putUrl.path,
+    port: 443
+  };
+
+  let put = https.request(putOpts);
+  tarball.pipe(put);
+  await eventToPromise(tarball, 'end');
 }
 
 async function main() {
@@ -76,18 +89,19 @@ async function main() {
   let queue = new taskcluster.Queue(queueOpts);
   let index = new taskcluster.Index(indexOpts);
 
-  let task = await queue.getTask(args.taskId);
+  let task = await queue.task(args.taskId);
 
   if (!task.extra || !task.extra.npmCache) {
     console.error('Task must contain task.extra');
     process.exit(1);
   }
 
-  let url = task.extra.npmCache.url;
-  if (!url) {
+  let pkgUrl = task.extra.npmCache.url;
+  if (!pkgUrl) {
     console.error('Task must contain a extra.npmCache.url');
     process.exit(1);
   }
+  pkgUrl = url.parse(pkgUrl);
 
   let expires = new Date(task.extra.npmCache.expires);
   if (!task.extra.npmCache.expires || expires < new Date()) {
@@ -97,8 +111,22 @@ async function main() {
     process.exit(1);
   }
 
-  let pkgReqs = await request.get(url).end();
-  let pkgContents = pkgReqs.text.trim();
+  let pkgRes, pkgContents = '';
+  let pkgReq = https.get(pkgUrl.href);
+  do {
+    pkgRes = await eventToPromise(pkgReq, 'response');
+    let status = pkgRes.statusCode;
+    if (status > 300 && status < 400 && pkgRes.headers.location) {
+      let locationUrl = url.parse(pkgRes.headers.location);
+      let redirectUrl = locationUrl.hostname ? locationUrl.href
+                                             : pkgUrl.host + locationUrl.path;
+      pkgReq = https.get(redirectUrl);
+    }
+  }
+  while(pkgRes.statusCode > 300 && pkgRes.statusCode < 400);
+  pkgRes.on('data', function(data) { pkgContents += data; });
+  await eventToPromise(pkgRes, 'end');
+  pkgContents = pkgContents.trim();
 
   //
   // XXXAus: HACK HACK HACK!!! To enable gaia to use local module paths in 
@@ -136,14 +164,16 @@ async function main() {
 
   debug('Package hash =', pkgHash);
   debug('Package namespace =', namespace);
-
   // Check to see if we already have this package json cached...
   try {
     let indexedTask = await index.findTask(namespace);
-    debug('Cache hit. Skipping tarball creation.');
+    debug('Cache hit =', indexedTask.taskId, '. Skipping tarball creation.');
     process.exit(0);
-  } catch (e) {
-    if (!err.statusCode || err.statusCode !== 404) throw e;
+  }
+  catch(err) {
+    if (!err.statusCode || err.statusCode !== 404) {
+      throw err;
+    }
   }
 
   let workspace = await npm();

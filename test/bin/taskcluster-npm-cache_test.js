@@ -17,7 +17,7 @@ suite('taskcluster-npm-cache', function() {
 
   async function runBin(name, argv) {
     let path = `${__dirname}/../../src/bin/${name}.js`;
-    let exec = `${__dirname}/../../node_modules/.bin/6to5-node`;
+    let exec = `${__dirname}/../../node_modules/.bin/babel-node`;
     let proc = spawn(exec, ['-r', path].concat(argv), { stdio: 'inherit' });
     return await eventToPromise(proc, 'exit');
   }
