@@ -1,6 +1,6 @@
 {
   "name": "taskcluster-npm-cache",
-  "version": "1.3.1",
+  "version": "1.3.2",
   "description": "Utilities to cache package.json + npm payloads via taskcluster.",
   "main": "index.js",
   "scripts": {
@@ -39,7 +39,7 @@
     "promise": "^7.0.4",
     "promised-temp": "^0.1.0",
     "slugid": "^1.0.3",
-    "taskcluster-client": "^0.23.2"
+    "taskcluster-client": "^0.23.8"
   },
   "devDependencies": {
     "mocha": "^2.0.1",
