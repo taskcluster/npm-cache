@@ -87,8 +87,7 @@ async function main() {
   let url = await queue.buildUrl(
     queue.getLatestArtifact,
     indexedTask.taskId,
-    'public',
-    'node_modules.tar.gz'
+    'public/node_modules.tar.gz'
   );
 
   let workspace = await npm(args.target);

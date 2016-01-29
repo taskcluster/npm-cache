@@ -35,6 +35,7 @@ class Workspace {
     let req = download().
       get(url).
       dest(target).
+      rename('node_modules.tar.gz').
       use(downloadStatus())
 
     await denodeify(req.run).call(req);
